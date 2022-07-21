@@ -1,63 +1,36 @@
 import { WebPlugin } from "@capacitor/core";
+import { FirebaseApp } from "firebase/app";
+import {
+  getAnalytics,
+  logEvent,
+  setUserId,
+  setUserProperties,
+  setAnalyticsCollectionEnabled
+} from 'firebase/analytics';
 
-import { FirebaseAnalyticsPlugin, FirebaseInitOptions } from "./definitions";
+import {
+  CollectionEnabledOptions,
+  FirebaseAnalyticsPlugin,
+  LogEventOptions, ScreenNameOptions,
+  SessionTimeoutDurationOptions, UserIdOptions,
+  UserPropertyOptions
+} from "./definitions";
 
-declare var window: any;
 
 export class FirebaseAnalyticsWeb
   extends WebPlugin
   implements FirebaseAnalyticsPlugin {
-  private not_supported_mssg = "This method is not supported";
-  private options_missing_mssg = "Firebase options are missing";
-  private duplicate_app_mssg = "Firebase app already exists";
-  private analytics_missing_mssg =
+  private ANALYTICS_MISSING_MESSAGE =
     "Firebase analytics is not initialized. Make sure initializeFirebase() is called once";
 
-  public readonly ready: Promise<any>;
-  private readyResolver: Function;
-  private analyticsRef: any;
-
-  private scripts = [
-    {
-      key: "firebase-app",
-      src: "https://www.gstatic.com/firebasejs/8.2.3/firebase-app.js",
-    },
-    {
-      key: "firebase-ac",
-      src: "https://www.gstatic.com/firebasejs/8.2.3/firebase-analytics.js",
-    },
-  ];
-
-  constructor() {
-    super();
-    this.ready = new Promise((resolve) => (this.readyResolver = resolve));
-    this.configure();
-  }
+  private appRef: FirebaseApp;
 
   /**
-   * Configure and Initialize FirebaseApp if not present
-   * @param options - web app's Firebase configuration
-   * @returns firebase analytics object reference
-   * Platform: Web
+   * Initialize FirebaseApp for plugin
+   * @param app - Firebase application
    */
-  initializeFirebase(options: FirebaseInitOptions): Promise<any> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
-
-      if (this.hasFirebaseInitialized()) {
-        reject(this.duplicate_app_mssg);
-        return;
-      }
-
-      if (!options) {
-        reject(this.options_missing_mssg);
-        return;
-      }
-
-      const app = window.firebase.initializeApp(options);
-      this.analyticsRef = app.analytics();
-      resolve(this.analyticsRef);
-    });
+  async initializeFirebase(app: FirebaseApp) {
+    this.appRef = app;
   }
 
   /**
@@ -65,25 +38,17 @@ export class FirebaseAnalyticsWeb
    * @param options - userId: unique identifier of the user to log
    * Platform: Web/Android/iOS
    */
-  setUserId(options: { userId: string }): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
+  async setUserId(options: UserIdOptions): Promise<void> {
 
-      if (!this.analyticsRef) {
-        reject(this.analytics_missing_mssg);
-        return;
-      }
+    if (!this.analytics)
+      throw new Error(this.ANALYTICS_MISSING_MESSAGE);
 
-      const { userId } = options || { userId: undefined };
+    const { userId } = options || { userId: undefined };
 
-      if (!userId) {
-        reject("userId property is missing");
-        return;
-      }
+    if (!userId)
+      throw new Error('userId property is missing');
 
-      this.analyticsRef.setUserId(userId);
-      resolve();
-    });
+    setUserId(this.analytics, userId);
   }
 
   /**
@@ -92,32 +57,20 @@ export class FirebaseAnalyticsWeb
    *                  value: The value of the user property.
    * Platform: Web/Android/iOS
    */
-  setUserProperty(options: { name: string; value: string }): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
+  async setUserProperty(options: UserPropertyOptions): Promise<void> {
 
-      if (!this.analyticsRef) {
-        reject(this.analytics_missing_mssg);
-        return;
-      }
+    if (!this.analytics)
+      throw new Error(this.ANALYTICS_MISSING_MESSAGE);
 
-      const { name, value } = options || { name: undefined, value: undefined };
+    const { name, value } = options || { name: undefined, value: undefined };
 
-      if (!name) {
-        reject("name property is missing");
-        return;
-      }
+    if (!name)
+      throw new Error('name property is missing');
 
-      if (!value) {
-        reject("value property is missing");
-        return;
-      }
+    if (!value)
+      throw new Error('value property is missing');
 
-      let property: any = {};
-      property[name] = value;
-      this.analyticsRef.setUserProperties(property);
-      resolve();
-    });
+    setUserProperties(this.analytics, { [name]: value });
   }
 
   /**
@@ -131,14 +84,11 @@ export class FirebaseAnalyticsWeb
 
   /**
    * Sets the current screen name, which specifies the current visual context in your app.
-   * @param options - screenName: the activity to which the screen name and class name apply.
-   *                  nameOverride: the name of the current screen. Set to null to clear the current screen name.
+   * @param _options - screenName: the activity to which the screen name and class name apply.
+   *                   nameOverride: the name of the current screen. Set to null to clear the current screen name.
    * Platform: Android/iOS
    */
-  setScreenName(_options: {
-    screenName: string;
-    nameOverride: string;
-  }): Promise<void> {
+  setScreenName(_options: ScreenNameOptions): Promise<void> {
     return new Promise((resolve, _reject) => resolve);
   }
 
@@ -156,28 +106,17 @@ export class FirebaseAnalyticsWeb
    *                  params: the map of event parameters.
    * Platform: Web/Android/iOS
    */
-  logEvent(options: { name: string; params: object }): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
+  async logEvent(options: LogEventOptions): Promise<void> {
 
-      if (!this.analyticsRef) {
-        reject(this.analytics_missing_mssg);
-        return;
-      }
+    if (!this.analytics)
+      throw new Error(this.ANALYTICS_MISSING_MESSAGE);
 
-      const { name, params } = options || {
-        name: undefined,
-        params: undefined,
-      };
+    const { name, params } = options || { name: undefined, params: undefined };
 
-      if (!name) {
-        reject("name property is missing");
-        return;
-      }
-
-      this.analyticsRef.logEvent(name, params);
-      resolve();
-    });
+    if (!name)
+      throw new Error('name property is missing');
+    
+    logEvent(this.analytics, name, params);
   }
 
   /**
@@ -185,149 +124,42 @@ export class FirebaseAnalyticsWeb
    * @param options - enabled: boolean true/false to enable/disable logging
    * Platform: Web/Android/iOS
    */
-  setCollectionEnabled(options: { enabled: boolean }): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
+  async setCollectionEnabled(options: CollectionEnabledOptions): Promise<void> {
+    if (!this.analytics)
+      throw new Error(this.ANALYTICS_MISSING_MESSAGE);
 
-      if (!this.analyticsRef) {
-        reject(this.analytics_missing_mssg);
-        return;
-      }
+    const { enabled } = options || { enabled: false };
 
-      const { enabled } = options || { enabled: false };
-      this.analyticsRef.setAnalyticsCollectionEnabled(enabled);
-      resolve();
-    });
+    setAnalyticsCollectionEnabled(this.analytics, enabled);
   }
 
   /**
    * Sets the duration of inactivity that terminates the current session.
-   * @param options - duration: duration of inactivity
+   * @param _options - duration: duration of inactivity
    * Platform: Android/iOS
    */
-  setSessionTimeoutDuration(_options: { duration: number }): Promise<void> {
-    return new Promise((_resolve, reject) => {
-      reject(this.not_supported_mssg);
-    });
+  async setSessionTimeoutDuration(_options: SessionTimeoutDurationOptions): Promise<void> {
+    throw this.unimplemented('setSessionTimeoutDuration - Not implemented on web.');
+  }
+
+  async enable(): Promise<void> {
+    if (!this.analytics)
+      throw new Error(this.ANALYTICS_MISSING_MESSAGE);
+
+    setAnalyticsCollectionEnabled(this.analytics, true);
+  }
+
+  async disable(): Promise<void> {
+    if (!this.analytics)
+      throw new Error(this.ANALYTICS_MISSING_MESSAGE);
+    
+    setAnalyticsCollectionEnabled(this.analytics, false);
   }
 
   /**
    * Returns analytics reference object
    */
-  get remoteConfig() {
-    return this.analyticsRef;
-  }
-
-  enable(): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
-
-      if (!this.analyticsRef) {
-        reject(this.analytics_missing_mssg);
-        return;
-      }
-
-      this.analyticsRef.setAnalyticsCollectionEnabled(true);
-      resolve();
-    });
-  }
-
-  disable(): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-      await this.ready;
-
-      if (!this.analyticsRef) {
-        reject(this.analytics_missing_mssg);
-        return;
-      }
-
-      this.analyticsRef.setAnalyticsCollectionEnabled(false);
-      resolve();
-    });
-  }
-
-  /**
-   * Ready resolver to check and load firebase analytics
-   */
-  private async configure() {
-    try {
-      await this.loadScripts();
-
-      if (
-        window.firebase &&
-        window.firebase.analytics &&
-        this.hasFirebaseInitialized()
-      ) {
-        this.analyticsRef = window.firebase.analytics();
-      }
-    } catch (error) {
-      throw error;
-    }
-
-    const interval = setInterval(() => {
-      if (!window.firebase) {
-        return;
-      }
-      clearInterval(interval);
-      this.readyResolver();
-    }, 50);
-  }
-
-  /**
-   * Check for existing loaded script and load new scripts
-   */
-  private loadScripts() {
-    const firebaseAppScript = this.scripts[0];
-    const firebaseAnalyticsScript = this.scripts[1];
-
-    return new Promise(async (resolve, _reject) => {
-      const scripts = this.scripts.map((script) => script.key);
-      if (
-        document.getElementById(scripts[0]) &&
-        document.getElementById(scripts[1])
-      ) {
-        return resolve(null);
-      }
-
-      await this.loadScript(firebaseAppScript.key, firebaseAppScript.src);
-      await this.loadScript(
-        firebaseAnalyticsScript.key,
-        firebaseAnalyticsScript.src
-      );
-      resolve(null);
-    });
-  }
-
-  /**
-   * Loaded single script with provided id and source
-   * @param id - unique identifier of the script
-   * @param src - source of the script
-   */
-  private loadScript(id: string, src: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const file = document.createElement("script");
-      file.type = "text/javascript";
-      file.src = src;
-      file.id = id;
-      file.onload = resolve;
-      file.onerror = reject;
-      document.querySelector("head").appendChild(file);
-    });
-  }
-
-  /**
-   * Returns true/false if firebase object reference exists inside window
-   */
-  private hasFirebaseInitialized() {
-    if (!window.firebase) {
-      return false;
-    }
-
-    const firebaseApps = window.firebase.apps;
-    if (firebaseApps && firebaseApps.length === 0) {
-      return false;
-    }
-
-    return true;
+  get analytics() {
+    return getAnalytics(this.appRef);
   }
 }

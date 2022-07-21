@@ -12,13 +12,6 @@ public class FirebaseAnalytics: CAPPlugin {
         }
     }
 
-    @objc func echo(_ call: CAPPluginCall) {
-        let value = call.getString("value") ?? ""
-        call.resolve([
-            "value": value
-        ])
-    }
-
     /// Sets the user ID property.
     /// - Parameter call: userId - unique identifier of the user to log
     @objc func setUserId(_ call: CAPPluginCall) {
@@ -51,7 +44,7 @@ public class FirebaseAnalytics: CAPPlugin {
     @objc func getAppInstanceId(_ call: CAPPluginCall) {
         let instanceId = Analytics.appInstanceID()
         call.resolve([
-            "instanceId": instanceId
+            "instanceId": instanceId!
         ])
     }
 
@@ -64,7 +57,7 @@ public class FirebaseAnalytics: CAPPlugin {
             DispatchQueue.main.async {
                 Analytics.logEvent(AnalyticsEventScreenView,
                     parameters: [AnalyticsParameterScreenName: screenName,
-                                AnalyticsParameterScreenClass: nameOverride])
+                                AnalyticsParameterScreenClass: nameOverride!])
             }
             call.resolve()
         } else {

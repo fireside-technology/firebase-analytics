@@ -18,7 +18,8 @@
   "author": "mesur.io <oss@mesur.io>",
   "license": "MIT",
   "dependencies": {
-    "@capacitor/core": "^3.0.0"
+    "@capacitor/core": "^3.0.0",
+    "firebase": "^9.9.0"
   },
   "devDependencies": {
     "@capacitor/android": "^3.0.0",
@@ -30,6 +31,7 @@
     "pretty-quick": "^3.1.0",
     "rimraf": "^3.0.2",
     "rollup": "^2.29.0",
+    "rollup-plugin-node-resolve": "^5.2.0",
     "typescript": "^4.2.3"
   },
   "husky": {

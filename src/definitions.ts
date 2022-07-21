@@ -1,27 +1,46 @@
+import { FirebaseApp } from "firebase/app";
+
 export interface FirebaseAnalyticsPlugin {
-  initializeFirebase(options: FirebaseInitOptions): Promise<any>;
-  setUserId(options: { userId: string }): Promise<void>;
-  setUserProperty(options: { name: string; value: string }): Promise<void>;
-  getAppInstanceId(): Promise<{ instanceId: string | null }>;
-  setScreenName(options: {
-    screenName: string;
-    nameOverride?: string;
-  }): Promise<void>;
+  initializeFirebase(app: FirebaseApp): Promise<void>;
+  setUserId(options: UserIdOptions): Promise<void>;
+  setUserProperty(options: UserPropertyOptions): Promise<void>;
+  getAppInstanceId(): Promise<AppInstanceIdReturn>;
+  setScreenName(options: ScreenNameOptions): Promise<void>;
   reset(): Promise<void>;
-  logEvent(options: { name: string; params: object }): Promise<void>;
-  setCollectionEnabled(options: { enabled: boolean }): Promise<void>;
-  setSessionTimeoutDuration(options: { duration: number }): Promise<void>;
+  logEvent(options: LogEventOptions): Promise<void>;
+  setCollectionEnabled(options: CollectionEnabledOptions): Promise<void>;
+  setSessionTimeoutDuration(options: SessionTimeoutDurationOptions): Promise<void>;
   enable(): Promise<void>;
   disable(): Promise<void>;
 }
 
-export interface FirebaseInitOptions {
-  apiKey: string;
-  authDomain: string;
-  databaseURL?: string;
-  projectId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-  appId: string;
-  measurementId: string;
+export interface AppInstanceIdReturn {
+  instanceId: string | null;
+}
+
+export interface CollectionEnabledOptions {
+  enabled: boolean;
+}
+
+export interface LogEventOptions {
+  name: string;
+  params: object;
+}
+
+export interface ScreenNameOptions {
+  screenName: string;
+  nameOverride?: string;
+}
+
+export interface SessionTimeoutDurationOptions {
+  duration: number;
+}
+
+export interface UserIdOptions {
+  userId: string;
+}
+
+export interface UserPropertyOptions {
+  name: string;
+  value: string;
 }
